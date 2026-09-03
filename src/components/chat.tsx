@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Markdown } from "@/components/markdown";
 
 type Message = { role: "user" | "assistant"; content: string };
 type Conversation = { id: string; title: string; updated_at: string };
@@ -18,11 +19,25 @@ export function Chat({
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
+  const [isDark, setIsDark] = useState(
+    () => typeof document !== "undefined" && document.documentElement.classList.contains("dark"),
+  );
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     refreshConversations();
   }, []);
+
+  function toggleTheme() {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    try {
+      localStorage.setItem("theme", next ? "dark" : "light");
+    } catch {
+      // localStorage unavailable; theme just won't persist across visits
+    }
+  }
 
   async function refreshConversations() {
     try {
@@ -116,12 +131,12 @@ export function Chat({
   }
 
   return (
-    <div className="flex h-screen bg-neutral-950 text-neutral-100">
-      <aside className="flex w-64 flex-col border-r border-neutral-800 bg-neutral-900">
+    <div className="flex h-screen bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+      <aside className="flex w-64 flex-col border-r border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="p-3">
           <button
             onClick={startNewChat}
-            className="w-full rounded-lg border border-neutral-700 px-3 py-2 text-left text-sm hover:bg-neutral-800"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-left text-sm hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
           >
             + New chat
           </button>
@@ -134,14 +149,14 @@ export function Chat({
               onClick={() => openConversation(c.id)}
               className={`group mb-1 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm ${
                 c.id === conversationId
-                  ? "bg-neutral-800 text-neutral-100"
-                  : "text-neutral-400 hover:bg-neutral-800/60 hover:text-neutral-200"
+                  ? "bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
+                  : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800/60 dark:hover:text-neutral-200"
               }`}
             >
               <span className="truncate">{c.title}</span>
               <button
                 onClick={(e) => deleteConversation(c.id, e)}
-                className="ml-2 hidden shrink-0 text-neutral-500 hover:text-neutral-200 group-hover:block"
+                className="ml-2 hidden shrink-0 text-neutral-400 hover:text-neutral-900 group-hover:block dark:text-neutral-500 dark:hover:text-neutral-200"
                 aria-label="Delete chat"
               >
                 ✕
@@ -150,18 +165,28 @@ export function Chat({
           ))}
         </div>
 
-        <div className="border-t border-neutral-800 p-3">
+        <div className="border-t border-neutral-200 p-3 dark:border-neutral-800">
           <div className="mb-2 truncate text-xs text-neutral-500">{userEmail}</div>
-          <form action={onSignOut}>
-            <button className="text-xs text-neutral-500 hover:text-neutral-200">
-              Sign out
+          <div className="flex items-center justify-between">
+            <form action={onSignOut}>
+              <button className="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200">
+                Sign out
+              </button>
+            </form>
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              suppressHydrationWarning
+              className="rounded-md px-2 py-1 text-sm hover:bg-neutral-200 dark:hover:bg-neutral-800"
+            >
+              {isDark ? "☀️" : "🌙"}
             </button>
-          </form>
+          </div>
         </div>
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center border-b border-neutral-800 px-4 py-3">
+        <header className="flex items-center border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
           <h1 className="text-sm font-medium">MyGPT</h1>
         </header>
 
@@ -178,13 +203,23 @@ export function Chat({
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
+                  className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
                     m.role === "user"
-                      ? "bg-neutral-100 text-neutral-900"
-                      : "bg-neutral-800 text-neutral-100"
+                      ? "whitespace-pre-wrap bg-neutral-900 text-neutral-50 dark:bg-neutral-100 dark:text-neutral-900"
+                      : "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
                   }`}
                 >
-                  {m.content || (isStreaming && i === messages.length - 1 ? "…" : "")}
+                  {m.role === "assistant" ? (
+                    m.content ? (
+                      <Markdown content={m.content} isDark={isDark} />
+                    ) : isStreaming && i === messages.length - 1 ? (
+                      "…"
+                    ) : (
+                      ""
+                    )
+                  ) : (
+                    m.content
+                  )}
                 </div>
               </div>
             ))}
@@ -194,19 +229,19 @@ export function Chat({
 
         <form
           onSubmit={sendMessage}
-          className="border-t border-neutral-800 px-4 py-4"
+          className="border-t border-neutral-200 px-4 py-4 dark:border-neutral-800"
         >
           <div className="mx-auto flex max-w-2xl gap-2">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Message MyGPT…"
-              className="flex-1 rounded-full border border-neutral-700 bg-neutral-900 px-4 py-2 text-sm outline-none focus:border-neutral-500"
+              className="flex-1 rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm outline-none focus:border-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-neutral-500"
             />
             <button
               type="submit"
               disabled={isStreaming || !input.trim()}
-              className="rounded-full bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 disabled:opacity-40"
+              className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-medium text-neutral-50 disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
             >
               Send
             </button>
