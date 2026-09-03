@@ -45,8 +45,8 @@ function CodeBlock({
           customStyle={{
             margin: 0,
             padding: "0.85rem",
-            fontSize: "0.9rem",
-            lineHeight: 1.6,
+            fontSize: "0.85rem",
+            lineHeight: 1.55,
             background: "transparent",
           }}
           codeTagProps={{

@@ -198,7 +198,7 @@ export function Chat({
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 py-6">
-          <div className="mx-auto flex max-w-2xl flex-col gap-4">
+          <div className="mx-auto flex max-w-3xl flex-col gap-4">
             {messages.length === 0 && (
               <p className="mt-20 text-center text-sm text-neutral-500">
                 {isLoadingConversation ? "Loading…" : "Ask me anything."}
@@ -210,10 +210,10 @@ export function Chat({
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2 text-[15px] leading-relaxed ${
+                  className={`rounded-2xl px-4 py-2 text-[15px] leading-relaxed ${
                     m.role === "user"
-                      ? "whitespace-pre-wrap bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-50"
-                      : "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
+                      ? "max-w-[80%] whitespace-pre-wrap bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-50"
+                      : "max-w-full min-w-0 bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
                   }`}
                 >
                   {m.role === "assistant" ? (
@@ -238,7 +238,7 @@ export function Chat({
           onSubmit={sendMessage}
           className="border-t border-neutral-200 px-4 py-4 dark:border-neutral-800"
         >
-          <div className="mx-auto flex max-w-2xl gap-2">
+          <div className="mx-auto flex max-w-3xl gap-2">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
