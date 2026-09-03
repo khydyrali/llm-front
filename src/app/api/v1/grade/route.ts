@@ -79,6 +79,7 @@ Return the marks awarded, brief overall feedback, and short lists of what the st
         messages: [{ role: "user", content: prompt }],
         stream: false,
         format: RESPONSE_SCHEMA,
+        options: { num_ctx: 2048, num_predict: 400 },
       }),
       signal: controller.signal,
     });
