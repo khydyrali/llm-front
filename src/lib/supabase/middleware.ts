@@ -2,6 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  // API routes handle their own auth (Supabase session or an API key) and
+  // must return proper JSON errors, not an HTML redirect to /login.
+  if (request.nextUrl.pathname.startsWith("/api")) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
