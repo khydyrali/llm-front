@@ -57,7 +57,6 @@ export async function POST(request: Request) {
         model: process.env.OLLAMA_MODEL,
         messages,
         stream: true,
-        options: { num_ctx: 4096, num_predict: 512 },
       }),
     },
   );
