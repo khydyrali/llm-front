@@ -8,5 +8,11 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return <Chat userEmail={user?.email ?? ""} onSignOut={signOut} />;
+  return (
+    <Chat
+      userEmail={user?.email ?? ""}
+      onSignOut={signOut}
+      modelName={process.env.OLLAMA_MODEL ?? ""}
+    />
+  );
 }

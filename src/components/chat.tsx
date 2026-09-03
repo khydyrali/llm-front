@@ -9,9 +9,11 @@ type Conversation = { id: string; title: string; updated_at: string };
 export function Chat({
   userEmail,
   onSignOut,
+  modelName,
 }: {
   userEmail: string;
   onSignOut: () => void;
+  modelName: string;
 }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -186,8 +188,13 @@ export function Chat({
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+        <header className="flex items-center gap-2 border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
           <h1 className="text-sm font-medium">MyGPT</h1>
+          {modelName && (
+            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+              {modelName}
+            </span>
+          )}
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 py-6">
@@ -203,9 +210,9 @@ export function Chat({
                 className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
+                  className={`max-w-[80%] rounded-2xl px-4 py-2 text-[15px] leading-relaxed ${
                     m.role === "user"
-                      ? "whitespace-pre-wrap bg-neutral-900 text-neutral-50 dark:bg-neutral-100 dark:text-neutral-900"
+                      ? "whitespace-pre-wrap bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-50"
                       : "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
                   }`}
                 >

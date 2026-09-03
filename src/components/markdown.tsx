@@ -28,35 +28,41 @@ function CodeBlock({
   }
 
   return (
-    <div className="group my-2 overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
-      <div className="flex items-center justify-between bg-neutral-100 px-3 py-1 text-xs text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+    <div className="my-2 overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-700">
+      <div className="flex items-center justify-between bg-neutral-100 px-3 py-1.5 text-xs text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
         <span>{language || "text"}</span>
         <button
           onClick={copy}
-          className="opacity-0 transition-opacity hover:text-neutral-900 group-hover:opacity-100 dark:hover:text-neutral-100"
+          className="hover:text-neutral-900 dark:hover:text-neutral-100"
         >
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <SyntaxHighlighter
-        language={language || undefined}
-        style={isDark ? oneDark : oneLight}
-        customStyle={{
-          margin: 0,
-          padding: "0.75rem",
-          fontSize: "0.8rem",
-          background: "transparent",
-        }}
-      >
-        {code}
-      </SyntaxHighlighter>
+      <div className="overflow-x-auto">
+        <SyntaxHighlighter
+          language={language || undefined}
+          style={isDark ? oneDark : oneLight}
+          customStyle={{
+            margin: 0,
+            padding: "0.85rem",
+            fontSize: "0.9rem",
+            lineHeight: 1.6,
+            background: "transparent",
+          }}
+          codeTagProps={{
+            style: { fontFamily: "var(--font-mono), ui-monospace, monospace" },
+          }}
+        >
+          {code}
+        </SyntaxHighlighter>
+      </div>
     </div>
   );
 }
 
 export function Markdown({ content, isDark }: { content: string; isDark: boolean }) {
   return (
-    <div className="flex flex-col gap-2 text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+    <div className="flex flex-col gap-2 text-[15px] leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
