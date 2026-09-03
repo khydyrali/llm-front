@@ -1,8 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
+import { pool } from "@/lib/db";
 
 export const runtime = "nodejs";
 
 type ChatMessage = { role: "user" | "assistant" | "system"; content: string };
+
+function titleFromMessage(text: string) {
+  const trimmed = text.trim().replace(/\s+/g, " ");
+  if (!trimmed) return "New chat";
+  return trimmed.length > 60 ? `${trimmed.slice(0, 60)}…` : trimmed;
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -14,7 +21,32 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { messages }: { messages: ChatMessage[] } = await request.json();
+  const {
+    messages,
+    conversationId,
+  }: { messages: ChatMessage[]; conversationId?: string | null } =
+    await request.json();
+
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
+
+  let activeConversationId = conversationId ?? null;
+  if (!activeConversationId) {
+    const { rows } = await pool.query<{ id: string }>(
+      "insert into conversations (user_id, title) values ($1, $2) returning id",
+      [user.id, titleFromMessage(lastUserMessage?.content ?? "")],
+    );
+    activeConversationId = rows[0].id;
+  }
+
+  if (lastUserMessage) {
+    await pool.query(
+      "insert into messages (conversation_id, role, content) values ($1, 'user', $2)",
+      [activeConversationId, lastUserMessage.content],
+    );
+    await pool.query("update conversations set updated_at = now() where id = $1", [
+      activeConversationId,
+    ]);
+  }
 
   const ollamaResponse = await fetch(
     `${process.env.OLLAMA_BASE_URL}/api/chat`,
@@ -36,11 +68,22 @@ export async function POST(request: Request) {
 
   const reader = ollamaResponse.body.getReader();
   const decoder = new TextDecoder();
+  let assistantText = "";
 
   const stream = new ReadableStream<Uint8Array>({
     async pull(controller) {
       const { done, value } = await reader.read();
       if (done) {
+        if (assistantText) {
+          await pool.query(
+            "insert into messages (conversation_id, role, content) values ($1, 'assistant', $2)",
+            [activeConversationId, assistantText],
+          );
+          await pool.query(
+            "update conversations set updated_at = now() where id = $1",
+            [activeConversationId],
+          );
+        }
         controller.close();
         return;
       }
@@ -51,6 +94,7 @@ export async function POST(request: Request) {
         try {
           const parsed = JSON.parse(line);
           if (parsed.message?.content) {
+            assistantText += parsed.message.content;
             controller.enqueue(new TextEncoder().encode(parsed.message.content));
           }
         } catch {
@@ -65,6 +109,9 @@ export async function POST(request: Request) {
   });
 
   return new Response(stream, {
-    headers: { "Content-Type": "text/plain; charset=utf-8" },
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "X-Conversation-Id": activeConversationId,
+    },
   });
 }
