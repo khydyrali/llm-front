@@ -6,6 +6,16 @@ import { Markdown } from "@/components/markdown";
 type Message = { role: "user" | "assistant"; content: string };
 type Conversation = { id: string; title: string; updated_at: string };
 
+const THINKING_PHRASES = [
+  "Thinking…",
+  "Cooking something up…",
+  "Crunching tokens…",
+  "Consulting the neurons…",
+  "Warming up the CPU…",
+  "We're cooking…",
+  "Assembling thoughts…",
+];
+
 export function Chat({
   userEmail,
   onSignOut,
@@ -24,11 +34,21 @@ export function Chat({
   const [isDark, setIsDark] = useState(
     () => typeof document !== "undefined" && document.documentElement.classList.contains("dark"),
   );
+  const [thinkingIndex, setThinkingIndex] = useState(0);
+  const [tokenCount, setTokenCount] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     refreshConversations();
   }, []);
+
+  useEffect(() => {
+    if (!isStreaming) return;
+    const id = setInterval(() => {
+      setThinkingIndex((i) => (i + 1) % THINKING_PHRASES.length);
+    }, 1600);
+    return () => clearInterval(id);
+  }, [isStreaming]);
 
   function toggleTheme() {
     const next = !isDark;
@@ -91,6 +111,8 @@ export function Chat({
     setMessages([...nextMessages, { role: "assistant", content: "" }]);
     setInput("");
     setIsStreaming(true);
+    setThinkingIndex(0);
+    setTokenCount(0);
 
     try {
       const res = await fetch("/api/chat", {
@@ -116,9 +138,13 @@ export function Chat({
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        assistantText += decoder.decode(value, { stream: true });
-        setMessages([...nextMessages, { role: "assistant", content: assistantText }]);
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        const chunk = decoder.decode(value, { stream: true });
+        if (chunk) {
+          assistantText += chunk;
+          setTokenCount((c) => c + 1);
+          setMessages([...nextMessages, { role: "assistant", content: assistantText }]);
+          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
       }
 
       refreshConversations();
@@ -217,13 +243,25 @@ export function Chat({
                   }`}
                 >
                   {m.role === "assistant" ? (
-                    m.content ? (
-                      <Markdown content={m.content} isDark={isDark} />
-                    ) : isStreaming && i === messages.length - 1 ? (
-                      "…"
-                    ) : (
-                      ""
-                    )
+                    <>
+                      {m.content ? (
+                        <Markdown content={m.content} isDark={isDark} />
+                      ) : isStreaming && i === messages.length - 1 ? (
+                        <span className="inline-flex items-center gap-2 text-neutral-500 dark:text-neutral-400">
+                          <span className="flex gap-1">
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-current" />
+                          </span>
+                          {THINKING_PHRASES[thinkingIndex]}
+                        </span>
+                      ) : null}
+                      {isStreaming && i === messages.length - 1 && tokenCount > 0 && (
+                        <div className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+                          🔥 {tokenCount} tokens burned
+                        </div>
+                      )}
+                    </>
                   ) : (
                     m.content
                   )}
